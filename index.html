@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>單機麻將</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --table: #12624d;
+      --table-dark: #07392f;
+      --panel: #0d2924;
+      --panel-2: #143830;
+      --tile: #fff7df;
+      --tile-side: #d4c08d;
+      --text: #fbf3df;
+      --muted: #c8baa0;
+      --gold: #e0b84f;
+      --red: #d45650;
+      --green: #4ebc7f;
+      --line: rgba(255, 255, 255, .16);
+      --shadow: rgba(0, 0, 0, .28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 8%, rgba(224, 184, 79, .2), transparent 24%),
+        linear-gradient(145deg, var(--table), var(--table-dark) 68%, #041f1b);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: var(--gold);
+      color: #211703;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    button.secondary {
+      background: #264f45;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    button.danger {
+      background: #a73b38;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .app {
+      width: min(1260px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .setup,
+    .board,
+    .log {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(5, 28, 24, .78);
+      box-shadow: 0 18px 56px var(--shadow);
+    }
+
+    .setup {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    input,
+    select {
+      min-width: 0;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, .08);
+      color: var(--text);
+      outline: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .seat {
+      min-height: 165px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    .seat.active {
+      outline: 3px solid rgba(224, 184, 79, .78);
+      background: var(--panel-2);
+    }
+
+    .seat.top {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .seat.left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .seat.center {
+      grid-column: 2;
+      grid-row: 2;
+      min-height: 265px;
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, .08), transparent 62%),
+        rgba(7, 48, 39, .82);
+    }
+
+    .seat.right {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .seat.player {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      min-height: 250px;
+    }
+
+    .seat-header,
+    .wall-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .name {
+      font-weight: 900;
+      font-size: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .score {
+      color: var(--gold);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .tiles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 50px;
+      align-content: flex-start;
+    }
+
+    .tile {
+      width: 42px;
+      height: 56px;
+      border: 0;
+      border-radius: 7px;
+      padding: 4px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(90deg, var(--tile), #fffdf2);
+      border-bottom: 5px solid var(--tile-side);
+      color: #172420;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, .24);
+    }
+
+    .tile-face {
+      display: grid;
+      place-items: center;
+      gap: 1px;
+      line-height: 1;
+    }
+
+    .tile-number {
+      font-size: 18px;
+    }
+
+    .tile-symbol {
+      font-size: 20px;
+    }
+
+    .tile-label {
+      font-size: 18px;
+    }
+
+    .tile.selectable {
+      transition: transform .12s ease, filter .12s ease;
+    }
+
+    .tile.selectable:hover {
+      transform: translateY(-8px);
+      filter: brightness(1.08);
+    }
+
+    .tile.back {
+      background:
+        linear-gradient(45deg, rgba(255, 255, 255, .16) 25%, transparent 25% 75%, rgba(255, 255, 255, .16) 75%),
+        #2b7765;
+      background-size: 16px 16px;
+      border-bottom-color: #1d4e43;
+    }
+
+    .tile.small {
+      width: 30px;
+      height: 40px;
+      font-size: 17px;
+      border-radius: 6px;
+      border-bottom-width: 4px;
+    }
+
+    .tile.small .tile-number,
+    .tile.small .tile-symbol,
+    .tile.small .tile-label {
+      font-size: 14px;
+    }
+
+    .tile.man {
+      color: #c73631;
+    }
+
+    .tile.pin {
+      color: #1971b7;
+    }
+
+    .tile.sou {
+      color: #17854e;
+    }
+
+    .tile.honor {
+      color: #222;
+    }
+
+    .tile.flower {
+      color: #8a3db6;
+      background: linear-gradient(90deg, #fff0fa, #fffdf2);
+      border-bottom-color: #c7a0d6;
+    }
+
+    .discard-title {
+      margin: 12px 0 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meld-title {
+      margin: 10px 0 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .melds {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 34px;
+    }
+
+    .meld {
+      display: flex;
+      gap: 3px;
+      padding: 5px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid var(--line);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .message {
+      min-height: 74px;
+      padding: 13px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .22);
+      border: 1px solid var(--line);
+      line-height: 1.6;
+    }
+
+    .message strong {
+      color: var(--gold);
+    }
+
+    .wall {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .wall-stat {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid var(--line);
+    }
+
+    .wall-stat b {
+      display: block;
+      color: var(--gold);
+      font-size: 24px;
+      margin-top: 3px;
+    }
+
+    .log {
+      margin-top: 16px;
+      padding: 14px;
+    }
+
+    .log h2 {
+      font-size: 20px;
+      margin-bottom: 9px;
+    }
+
+    .log-list {
+      display: grid;
+      gap: 6px;
+      max-height: 150px;
+      overflow: auto;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        padding: 14px;
+      }
+
+      .topbar,
+      .setup,
+      .board {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .seat,
+      .seat.top,
+      .seat.left,
+      .seat.center,
+      .seat.right,
+      .seat.player {
+        grid-column: 1;
+        grid-row: auto;
+      }
+
+      .setup button,
+      .topbar button,
+      .controls button {
+        width: 100%;
+      }
+
+      .tile {
+        width: 36px;
+        height: 50px;
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>單機麻將</h1>
+        <p class="subtitle">一位真人玩家對三位電腦玩家。使用 144 張牌含花牌，可自行輸入初始幣值、每台幣值、底分與胡牌台數。</p>
+      </div>
+      <button id="resetBtn" class="secondary" type="button">重新設定</button>
+    </header>
+
+    <section class="setup" id="setup">
+      <label>
+        玩家名稱
+        <input id="playerName" type="text" value="玩家">
+      </label>
+      <label>
+        每台幣值
+        <input id="taiValue" type="number" min="1" step="1" value="10">
+      </label>
+      <label>
+        每人初始幣值
+        <input id="initialCoins" type="number" min="1" step="1" value="1000">
+      </label>
+      <label>
+        底分 / 玩的大小
+        <input id="baseValue" type="number" min="0" step="1" value="50">
+      </label>
+      <label>
+        胡牌台數
+        <input id="winTai" type="number" min="1" step="1" value="3">
+      </label>
+      <button id="startBtn" type="button">開始一局</button>
+    </section>
+
+    <section class="board" aria-live="polite">
+      <article class="seat top" id="seat2"></article>
+      <article class="seat left" id="seat1"></article>
+      <article class="seat center">
+        <div class="message" id="message">設定金額後開始。玩法採簡化台灣麻將：含花牌補花，每人 16 張，莊家 17 張先打，5 組順/刻加 1 對即可胡牌。</div>
+        <div class="wall">
+          <div class="wall-stat">牌牆剩餘<b id="wallCount">0</b></div>
+          <div class="wall-stat">本局金額<b id="roundValue">0</b></div>
+        </div>
+      </article>
+      <article class="seat right" id="seat3"></article>
+      <article class="seat player" id="seat0"></article>
+    </section>
+
+    <section class="log">
+      <h2>牌局紀錄</h2>
+      <div class="log-list" id="logList"></div>
+    </section>
+  </main>
+
+  <script>
+    const tileDefs = [
+      ...Array.from({ length: 9 }, (_, i) => ({ id: `m${i + 1}`, label: `${i + 1}萬`, short: `${i + 1}萬`, suit: "man", symbol: "萬", value: i + 1 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ id: `p${i + 1}`, label: `${i + 1}筒`, short: `${i + 1}筒`, suit: "pin", symbol: "●", value: i + 1 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ id: `s${i + 1}`, label: `${i + 1}條`, short: `${i + 1}條`, suit: "sou", symbol: "竹", value: i + 1 })),
+      { id: "e", label: "東", short: "東", suit: "honor", symbol: "東", value: 1 },
+      { id: "s", label: "南", short: "南", suit: "honor", symbol: "南", value: 2 },
+      { id: "w", label: "西", short: "西", suit: "honor", symbol: "西", value: 3 },
+      { id: "n", label: "北", short: "北", suit: "honor", symbol: "北", value: 4 },
+      { id: "z", label: "中", short: "中", suit: "honor", symbol: "中", value: 5 },
+      { id: "f", label: "發", short: "發", suit: "honor", symbol: "發", value: 6 },
+      { id: "b", label: "白", short: "白", suit: "honor", symbol: "白", value: 7 },
+      { id: "fl1", label: "春", short: "春", suit: "flower", symbol: "春", value: 1 },
+      { id: "fl2", label: "夏", short: "夏", suit: "flower", symbol: "夏", value: 2 },
+      { id: "fl3", label: "秋", short: "秋", suit: "flower", symbol: "秋", value: 3 },
+      { id: "fl4", label: "冬", short: "冬", suit: "flower", symbol: "冬", value: 4 },
+      { id: "fl5", label: "梅", short: "梅", suit: "flower", symbol: "梅", value: 5 },
+      { id: "fl6", label: "蘭", short: "蘭", suit: "flower", symbol: "蘭", value: 6 },
+      { id: "fl7", label: "菊", short: "菊", suit: "flower", symbol: "菊", value: 7 },
+      { id: "fl8", label: "竹", short: "竹", suit: "flower", symbol: "竹", value: 8 }
+    ];
+
+    const tileMap = Object.fromEntries(tileDefs.map(tile => [tile.id, tile]));
+    const seats = [0, 1, 2, 3].map(i => document.querySelector(`#seat${i}`));
+    const state = {
+      wall: [],
+      players: [],
+      turn: 0,
+      phase: "setup",
+      pendingClaim: null,
+      settings: { taiValue: 10, initialCoins: 1000, baseValue: 50, winTai: 3 },
+      log: []
+    };
+
+    const setupEl = document.querySelector("#setup");
+    const playerNameEl = document.querySelector("#playerName");
+    const taiValueEl = document.querySelector("#taiValue");
+    const initialCoinsEl = document.querySelector("#initialCoins");
+    const baseValueEl = document.querySelector("#baseValue");
+    const winTaiEl = document.querySelector("#winTai");
+    const startBtn = document.querySelector("#startBtn");
+    const resetBtn = document.querySelector("#resetBtn");
+    const messageEl = document.querySelector("#message");
+    const wallCountEl = document.querySelector("#wallCount");
+    const roundValueEl = document.querySelector("#roundValue");
+    const logListEl = document.querySelector("#logList");
+
+    function buildWall() {
+      const wall = [];
+      tileDefs.forEach(tile => {
+        const amount = tile.suit === "flower" ? 1 : 4;
+        for (let i = 0; i < amount; i += 1) wall.push(tile.id);
+      });
+      for (let i = wall.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [wall[i], wall[j]] = [wall[j], wall[i]];
+      }
+      return wall;
+    }
+
+    function tileSort(a, b) {
+      const ta = tileMap[a];
+      const tb = tileMap[b];
+      const order = { man: 0, sou: 1, pin: 2, honor: 3, flower: 4 };
+      return order[ta.suit] - order[tb.suit] || ta.value - tb.value;
+    }
+
+    function drawTile(player) {
+      const tile = state.wall.pop();
+      if (tile) player.hand.push(tile);
+      return tile;
+    }
+
+    function drawPlayableTile(player) {
+      let tile = state.wall.pop();
+      while (tile && tileMap[tile].suit === "flower") {
+        player.flowers.push(tile);
+        addLog(`${player.name} 摸到花牌 ${tileMap[tile].label}，立即補花。`);
+        tile = state.wall.pop();
+      }
+      if (tile) player.hand.push(tile);
+      return tile;
+    }
+
+    function handCounts(hand) {
+      const counts = {};
+      hand.forEach(tile => {
+        counts[tile] = (counts[tile] || 0) + 1;
+      });
+      return counts;
+    }
+
+    function canFormMelds(counts, meldsNeeded) {
+      if (meldsNeeded === 0) {
+        return Object.values(counts).every(count => count === 0);
+      }
+
+      const tileId = Object.keys(counts).sort(tileSort).find(id => counts[id] > 0);
+      if (!tileId) return false;
+
+      if (counts[tileId] >= 3) {
+        counts[tileId] -= 3;
+        if (canFormMelds(counts, meldsNeeded - 1)) {
+          counts[tileId] += 3;
+          return true;
+        }
+        counts[tileId] += 3;
+      }
+
+      const tile = tileMap[tileId];
+      if (tile.suit !== "honor" && tile.value <= 7) {
+        const second = `${tile.suit[0]}${tile.value + 1}`;
+        const third = `${tile.suit[0]}${tile.value + 2}`;
+        if ((counts[second] || 0) > 0 && (counts[third] || 0) > 0) {
+          counts[tileId] -= 1;
+          counts[second] -= 1;
+          counts[third] -= 1;
+          if (canFormMelds(counts, meldsNeeded - 1)) {
+            counts[tileId] += 1;
+            counts[second] += 1;
+            counts[third] += 1;
+            return true;
+          }
+          counts[tileId] += 1;
+          counts[second] += 1;
+          counts[third] += 1;
+        }
+      }
+
+      return false;
+    }
+
+    function isWinningHand(player) {
+      const hand = player.hand;
+      const openMelds = player.melds.length;
+      const meldsNeeded = 5 - openMelds;
+      if (meldsNeeded < 0 || hand.length !== meldsNeeded * 3 + 2) return false;
+      const counts = handCounts(hand);
+      return Object.keys(counts).some(tile => {
+        if (counts[tile] < 2) return false;
+        counts[tile] -= 2;
+        const wins = canFormMelds(counts, meldsNeeded);
+        counts[tile] += 2;
+        return wins;
+      });
+    }
+
+    function roundValue() {
+      return state.settings.baseValue + state.settings.taiValue * state.settings.winTai;
+    }
+
+    function startGame() {
+      const name = playerNameEl.value.trim() || "玩家";
+      state.settings = {
+        taiValue: Math.max(1, Number(taiValueEl.value) || 1),
+        initialCoins: Math.max(1, Number(initialCoinsEl.value) || 1),
+        baseValue: Math.max(0, Number(baseValueEl.value) || 0),
+        winTai: Math.max(1, Number(winTaiEl.value) || 1)
+      };
+      state.wall = buildWall();
+      state.players = [
+        { name, hand: [], melds: [], flowers: [], discards: [], coins: state.settings.initialCoins, human: true, dealer: true },
+        { name: "電腦玩家 1", hand: [], melds: [], flowers: [], discards: [], coins: state.settings.initialCoins, human: false, dealer: false },
+        { name: "電腦玩家 2", hand: [], melds: [], flowers: [], discards: [], coins: state.settings.initialCoins, human: false, dealer: false },
+        { name: "電腦玩家 3", hand: [], melds: [], flowers: [], discards: [], coins: state.settings.initialCoins, human: false, dealer: false }
+      ];
+      state.turn = 0;
+      state.phase = "playing";
+      state.pendingClaim = null;
+      state.log = [];
+
+      for (let i = 0; i < 16; i += 1) {
+        state.players.forEach(drawPlayableTile);
+      }
+
+      addLog(`開局完成。初始 ${state.settings.initialCoins}，每台 ${state.settings.taiValue}，底分 ${state.settings.baseValue}，胡牌 ${state.settings.winTai} 台。`);
+      drawPlayableTile(state.players[0]);
+      state.players.forEach(player => player.hand.sort(tileSort));
+      state.phase = "awaitDiscard";
+      messageEl.innerHTML = `<strong>${escapeHtml(state.players[0].name)}</strong> 是莊家，開門後請先打一張牌。`;
+      render();
+    }
+
+    function drawForTurn() {
+      if (state.wall.length === 0) {
+        endDraw();
+        return;
+      }
+      const player = state.players[state.turn];
+      const tile = drawPlayableTile(player);
+      if (!tile) {
+        endDraw();
+        return;
+      }
+      player.hand.sort(tileSort);
+      addLog(`${player.name} 摸牌。`);
+
+      if (isWinningHand(player)) {
+        finishWin(player);
+        return;
+      }
+
+      if (player.human) {
+        state.phase = "awaitDiscard";
+        messageEl.innerHTML = `<strong>${escapeHtml(player.name)}</strong> 摸了一張牌。可直接按「胡牌檢查」，或點一張牌打出。`;
+        render();
+        return;
+      }
+
+      render();
+      window.setTimeout(() => computerDiscard(player), 650);
+    }
+
+    function chooseComputerDiscard(player) {
+      const counts = handCounts(player.hand);
+      const isolated = player.hand.find(tile => {
+        const def = tileMap[tile];
+        if (counts[tile] >= 2) return false;
+        if (def.suit === "honor") return true;
+        const prev = `${def.suit[0]}${def.value - 1}`;
+        const next = `${def.suit[0]}${def.value + 1}`;
+        return !counts[prev] && !counts[next];
+      });
+      return isolated || player.hand[player.hand.length - 1];
+    }
+
+    function computerDiscard(player) {
+      if (state.phase !== "playing") return;
+      const tile = chooseComputerDiscard(player);
+      discardTile(player, tile);
+    }
+
+    function discardTile(player, tile) {
+      const index = player.hand.indexOf(tile);
+      if (index < 0) return;
+      const discarderIndex = state.players.indexOf(player);
+      player.hand.splice(index, 1);
+      player.discards.push(tile);
+      addLog(`${player.name} 打出 ${tileMap[tile].label}。`);
+      handleDiscardClaim(discarderIndex, tile);
+    }
+
+    function nextTurnAfter(discarderIndex) {
+      state.turn = (discarderIndex + 1) % 4;
+      state.phase = "playing";
+      state.pendingClaim = null;
+      render();
+      window.setTimeout(drawForTurn, state.players[discarderIndex].human ? 250 : 500);
+    }
+
+    function handleDiscardClaim(discarderIndex, tile) {
+      const human = state.players[0];
+      const claimOptions = [];
+
+      if (discarderIndex !== 0) {
+        const counts = handCounts(human.hand);
+        if (canWinWithDiscard(human, tile)) {
+          claimOptions.push({ type: "win", tiles: [tile], label: `胡 ${tileMap[tile].label}` });
+        }
+        if ((counts[tile] || 0) >= 2) {
+          claimOptions.push({ type: "pong", tiles: [tile, tile], label: `碰 ${tileMap[tile].label}` });
+        }
+        getChiOptions(tile).forEach(option => claimOptions.push(option));
+      }
+
+      if (claimOptions.length > 0) {
+        state.phase = "claim";
+        state.pendingClaim = { discarderIndex, tile, options: claimOptions };
+        messageEl.innerHTML = `<strong>${escapeHtml(state.players[discarderIndex].name)}</strong> 打出 ${tileMap[tile].label}，你可以吃或碰。`;
+        render();
+        return;
+      }
+
+      nextTurnAfter(discarderIndex);
+    }
+
+    function canWinWithDiscard(player, tile) {
+      player.hand.push(tile);
+      const wins = isWinningHand(player);
+      player.hand.pop();
+      return wins;
+    }
+
+    function getChiOptions(tile) {
+      if (!state.pendingClaim && state.turn !== 3) {
+        return [];
+      }
+      const discarderIndex = state.pendingClaim ? state.pendingClaim.discarderIndex : state.turn;
+      if (discarderIndex !== 3) return [];
+
+      const def = tileMap[tile];
+      if (def.suit === "honor") return [];
+
+      const human = state.players[0];
+      const counts = handCounts(human.hand);
+      const candidates = [
+        [def.value - 2, def.value - 1],
+        [def.value - 1, def.value + 1],
+        [def.value + 1, def.value + 2]
+      ];
+
+      return candidates
+        .filter(values => values.every(value => value >= 1 && value <= 9))
+        .map(values => values.map(value => `${def.suit[0]}${value}`))
+        .filter(tiles => tiles.every(id => (counts[id] || 0) > 0))
+        .map(tiles => ({
+          type: "chi",
+          tiles,
+          label: `吃 ${[...tiles, tile].sort(tileSort).map(id => tileMap[id].label).join(" ")}`
+        }));
+    }
+
+    function removeTilesFromHand(player, tiles) {
+      tiles.forEach(tile => {
+        const index = player.hand.indexOf(tile);
+        if (index >= 0) player.hand.splice(index, 1);
+      });
+    }
+
+    function claimMeld(optionIndex) {
+      if (state.phase !== "claim" || !state.pendingClaim) return;
+      const option = state.pendingClaim.options[optionIndex];
+      if (!option) return;
+
+      const human = state.players[0];
+      const discarder = state.players[state.pendingClaim.discarderIndex];
+      if (option.type === "win") {
+        human.hand.push(state.pendingClaim.tile);
+        human.hand.sort(tileSort);
+        discarder.discards.pop();
+        addLog(`${human.name} 胡 ${tileMap[state.pendingClaim.tile].label}。`);
+        finishWin(human);
+        return;
+      }
+
+      discarder.discards.pop();
+      removeTilesFromHand(human, option.tiles);
+      human.melds.push({
+        type: option.type,
+        tiles: [...option.tiles, state.pendingClaim.tile].sort(tileSort),
+        from: discarder.name
+      });
+      human.hand.sort(tileSort);
+      const latestMeld = human.melds[human.melds.length - 1];
+      state.turn = 0;
+      state.phase = "awaitDiscard";
+      state.pendingClaim = null;
+      addLog(`${human.name} ${option.type === "pong" ? "碰" : "吃"} ${latestMeld.tiles.map(id => tileMap[id].label).join(" ")}。`);
+      messageEl.innerHTML = `你已${option.type === "pong" ? "碰" : "吃"}牌，請打一張牌。`;
+      render();
+    }
+
+    function skipClaim() {
+      if (state.phase !== "claim" || !state.pendingClaim) return;
+      const discarderIndex = state.pendingClaim.discarderIndex;
+      addLog(`${state.players[0].name} 略過吃碰。`);
+      nextTurnAfter(discarderIndex);
+    }
+
+    function humanDiscard(tile) {
+      if (state.phase !== "awaitDiscard" || state.turn !== 0) return;
+      discardTile(state.players[0], tile);
+    }
+
+    function checkHumanWin() {
+      if (state.phase !== "awaitDiscard") return;
+      const player = state.players[0];
+      if (isWinningHand(player)) {
+        finishWin(player);
+        return;
+      }
+      messageEl.innerHTML = `目前還不能胡牌，請選一張牌打出。`;
+    }
+
+    function finishWin(winner) {
+      state.phase = "finished";
+      state.pendingClaim = null;
+      const value = roundValue();
+      const losers = state.players.filter(player => player !== winner);
+      losers.forEach(player => {
+        player.coins -= value;
+        winner.coins += value;
+      });
+      addLog(`${winner.name} 胡牌，收取每家 ${value}。`);
+      messageEl.innerHTML = `<strong>${escapeHtml(winner.name)}</strong> 胡牌！本局每家支付 ${value}。`;
+      render();
+    }
+
+    function endDraw() {
+      state.phase = "finished";
+      state.pendingClaim = null;
+      addLog("牌牆摸完，流局。");
+      messageEl.textContent = "牌牆摸完，流局。";
+      render();
+    }
+
+    function addLog(text) {
+      state.log.unshift(text);
+      state.log = state.log.slice(0, 40);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function makeTile(tile, options = {}) {
+      const def = tileMap[tile];
+      const el = document.createElement(options.button ? "button" : "div");
+      el.className = `tile ${def.suit} ${options.small ? "small" : ""} ${options.button ? "selectable" : ""}`;
+      if (def.suit === "honor" || def.suit === "flower") {
+        el.innerHTML = `<span class="tile-label">${def.symbol}</span>`;
+      } else {
+        el.innerHTML = `<span class="tile-face"><span class="tile-number">${def.value}</span><span class="tile-symbol">${def.symbol}</span></span>`;
+      }
+      el.title = def.label;
+      if (options.button) {
+        el.type = "button";
+        el.addEventListener("click", () => humanDiscard(tile));
+      }
+      return el;
+    }
+
+    function renderMeld(meld) {
+      const el = document.createElement("div");
+      el.className = "meld";
+      el.title = `${meld.type === "pong" ? "碰" : "吃"}自 ${meld.from}`;
+      meld.tiles.forEach(tile => el.appendChild(makeTile(tile, { small: true })));
+      return el;
+    }
+
+    function renderSeat(player, index) {
+      const seat = seats[index];
+      seat.className = `seat ${index === 0 ? "player" : index === 1 ? "left" : index === 2 ? "top" : "right"} ${state.turn === index && state.phase !== "finished" ? "active" : ""}`;
+      const hidden = !player.human && state.phase !== "finished";
+      const handTiles = hidden
+        ? player.hand.map(() => `<div class="tile back ${index === 0 ? "" : "small"}"></div>`).join("")
+        : "";
+
+      seat.innerHTML = `
+        <div class="seat-header">
+          <div>
+            <div class="name">${escapeHtml(player.name)}</div>
+            <div class="meta">${player.dealer ? "莊家 · " : ""}${player.human ? "真人玩家" : "電腦玩家"} · 手牌 ${player.hand.length} 張</div>
+          </div>
+          <div class="score">${player.coins} 幣</div>
+        </div>
+        <div class="tiles hand-tiles">${handTiles}</div>
+        <div class="meld-title">花牌</div>
+        <div class="tiles flower-tiles"></div>
+        <div class="meld-title">已吃 / 已碰</div>
+        <div class="melds"></div>
+        <div class="discard-title">已打出的牌</div>
+        <div class="tiles discard-tiles"></div>
+        <div class="controls"></div>
+      `;
+
+      const handEl = seat.querySelector(".hand-tiles");
+      if (!hidden) {
+        player.hand.slice().sort(tileSort).forEach(tile => {
+          handEl.appendChild(makeTile(tile, {
+            button: player.human && state.phase === "awaitDiscard",
+            small: !player.human
+          }));
+        });
+      }
+
+      const discardEl = seat.querySelector(".discard-tiles");
+      player.discards.forEach(tile => discardEl.appendChild(makeTile(tile, { small: true })));
+
+      const flowersEl = seat.querySelector(".flower-tiles");
+      player.flowers.forEach(tile => flowersEl.appendChild(makeTile(tile, { small: true })));
+
+      const meldsEl = seat.querySelector(".melds");
+      player.melds.forEach(meld => meldsEl.appendChild(renderMeld(meld)));
+
+      const controls = seat.querySelector(".controls");
+      if (player.human) {
+        if (state.phase === "claim" && state.pendingClaim) {
+          state.pendingClaim.options.forEach((option, optionIndex) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = option.label;
+            button.addEventListener("click", () => claimMeld(optionIndex));
+            controls.appendChild(button);
+          });
+
+          const skipButton = document.createElement("button");
+          skipButton.type = "button";
+          skipButton.className = "secondary";
+          skipButton.textContent = "略過";
+          skipButton.addEventListener("click", skipClaim);
+          controls.appendChild(skipButton);
+        }
+
+        const winButton = document.createElement("button");
+        winButton.type = "button";
+        winButton.textContent = "胡牌檢查";
+        winButton.disabled = state.phase !== "awaitDiscard";
+        winButton.addEventListener("click", checkHumanWin);
+        controls.appendChild(winButton);
+
+        const newRound = document.createElement("button");
+        newRound.type = "button";
+        newRound.className = "secondary";
+        newRound.textContent = "下一局";
+        newRound.disabled = state.phase === "setup";
+        newRound.addEventListener("click", startGame);
+        controls.appendChild(newRound);
+      }
+    }
+
+    function render() {
+      if (state.players.length === 0) {
+        seats.forEach(seat => {
+          seat.innerHTML = "";
+        });
+        wallCountEl.textContent = "0";
+        roundValueEl.textContent = "0";
+        logListEl.innerHTML = "";
+        return;
+      }
+
+      state.players.forEach(renderSeat);
+      wallCountEl.textContent = state.wall.length;
+      roundValueEl.textContent = roundValue();
+      logListEl.innerHTML = state.log.map(item => `<p>${escapeHtml(item)}</p>`).join("");
+
+      if (state.phase === "playing") {
+        const player = state.players[state.turn];
+        messageEl.innerHTML = `輪到 <strong>${escapeHtml(player.name)}</strong>。`;
+      }
+    }
+
+    function resetGame() {
+      state.wall = [];
+      state.players = [];
+      state.turn = 0;
+      state.phase = "setup";
+      state.pendingClaim = null;
+      state.log = [];
+      messageEl.textContent = "設定金額後開始。玩法採簡化台灣麻將：含花牌補花，每人 16 張，莊家 17 張先打，5 組順/刻加 1 對即可胡牌。";
+      render();
+    }
+
+    startBtn.addEventListener("click", startGame);
+    resetBtn.addEventListener("click", resetGame);
+    render();
+  </script>
+</body>
+</html>
