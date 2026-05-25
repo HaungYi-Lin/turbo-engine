@@ -82,6 +82,18 @@
       overflow: hidden;
     }
 
+    body.game-active .app {
+      grid-template-rows: auto 1fr;
+    }
+
+    body.game-active .setup {
+      display: none;
+    }
+
+    body.game-active .subtitle {
+      display: none;
+    }
+
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -199,6 +211,15 @@
       grid-column: 1 / -1;
       grid-row: 3;
       min-height: 0;
+      position: relative;
+      padding-bottom: 52px;
+    }
+
+    .seat.player .controls {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
     }
 
     .seat-header,
@@ -404,14 +425,26 @@
 
     @media (max-width: 860px) {
       .app {
-        padding: 14px;
+        padding: 6px;
       }
 
-      .topbar,
-      .setup,
-      .board {
-        display: grid;
-        grid-template-columns: 1fr;
+      .topbar {
+        display: flex;
+        align-items: center;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .setup {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .setup button {
+        grid-column: 1 / -1;
       }
 
       .seat,
@@ -420,20 +453,124 @@
       .seat.center,
       .seat.right,
       .seat.player {
-        grid-column: 1;
-        grid-row: auto;
+        min-width: 0;
       }
 
-      .setup button,
-      .topbar button,
-      .controls button {
-        width: 100%;
+      .board {
+        grid-template-columns: minmax(86px, .8fr) minmax(250px, 1.6fr) minmax(86px, .8fr);
+        grid-template-rows: 82px minmax(118px, 1fr) 226px;
+        gap: 6px;
+        padding: 6px;
+      }
+
+      .seat {
+        padding: 6px;
+      }
+
+      .seat.top {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .seat.left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .seat.center {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .seat.right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .seat.player {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        padding-bottom: 42px;
       }
 
       .tile {
-        width: 36px;
-        height: 50px;
-        font-size: 21px;
+        width: 29px;
+        height: 40px;
+        font-size: 12px;
+        padding: 2px;
+      }
+
+      .tile.small {
+        width: 22px;
+        height: 29px;
+        font-size: 10px;
+      }
+
+      .name {
+        font-size: 13px;
+      }
+
+      .meta {
+        font-size: 10px;
+      }
+
+      .score {
+        font-size: 12px;
+      }
+
+      .tiles {
+        gap: 3px;
+        min-height: 28px;
+      }
+
+      .message {
+        max-height: 66px;
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .wall {
+        margin-top: 6px;
+        gap: 6px;
+      }
+
+      .wall-stat {
+        padding: 6px;
+        font-size: 11px;
+      }
+
+      .wall-stat b {
+        font-size: 18px;
+      }
+
+      .center-discard-title,
+      .meld-title {
+        margin: 5px 0 3px;
+        font-size: 11px;
+      }
+
+      .center-discards {
+        min-height: 50px;
+        max-height: 58px;
+        padding: 5px;
+      }
+
+      .controls {
+        margin-top: 6px;
+        gap: 6px;
+      }
+
+      .seat.player .controls {
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+      }
+
+      .controls button,
+      .topbar button {
+        padding: 7px 9px;
+        font-size: 12px;
       }
     }
   </style>
@@ -665,6 +802,7 @@
       state.phase = "playing";
       state.pendingClaim = null;
       state.log = [];
+      document.body.classList.add("game-active");
 
       for (let i = 0; i < 16; i += 1) {
         state.players.forEach(drawPlayableTile);
@@ -931,7 +1069,7 @@
       seat.className = `seat ${index === 0 ? "player" : index === 1 ? "left" : index === 2 ? "top" : "right"} ${state.turn === index && state.phase !== "finished" ? "active" : ""}`;
       const hidden = !player.human && state.phase !== "finished";
       const handTiles = hidden
-        ? player.hand.map(() => `<div class="tile back ${index === 0 ? "" : "small"}"></div>`).join("")
+        ? Array.from({ length: Math.min(player.hand.length, 8) }, () => `<div class="tile back small"></div>`).join("")
         : "";
 
       seat.innerHTML = `
@@ -1040,6 +1178,7 @@
       state.phase = "setup";
       state.pendingClaim = null;
       state.log = [];
+      document.body.classList.remove("game-active");
       messageEl.textContent = "設定金額後開始。玩法採簡化台灣麻將：含花牌補花，每人 16 張，莊家 17 張先打，5 組順/刻加 1 對即可胡牌。";
       render();
     }
