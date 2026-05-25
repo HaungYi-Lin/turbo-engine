@@ -28,7 +28,8 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
       color: var(--text);
       background:
@@ -72,8 +73,13 @@
 
     .app {
       width: min(1260px, 100%);
+      height: 100vh;
       margin: 0 auto;
-      padding: 20px;
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+      overflow: hidden;
     }
 
     .topbar {
@@ -81,7 +87,7 @@
       justify-content: space-between;
       gap: 16px;
       align-items: flex-start;
-      margin-bottom: 16px;
+      margin-bottom: 0;
     }
 
     h1,
@@ -92,7 +98,7 @@
     }
 
     h1 {
-      font-size: clamp(32px, 5vw, 56px);
+      font-size: clamp(24px, 3vw, 38px);
       line-height: 1;
       letter-spacing: 0;
     }
@@ -101,6 +107,7 @@
       margin-top: 8px;
       color: var(--muted);
       line-height: 1.5;
+      font-size: 14px;
     }
 
     .setup,
@@ -116,8 +123,8 @@
       display: grid;
       grid-template-columns: repeat(6, minmax(120px, 1fr));
       gap: 12px;
-      padding: 14px;
-      margin-bottom: 16px;
+      padding: 10px;
+      margin-bottom: 0;
       align-items: end;
     }
 
@@ -134,7 +141,7 @@
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 10px 11px;
+      padding: 8px 10px;
       background: rgba(255, 255, 255, .08);
       color: var(--text);
       outline: none;
@@ -143,17 +150,20 @@
     .board {
       display: grid;
       grid-template-columns: 1fr 1.35fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 14px;
-      padding: 14px;
+      grid-template-rows: minmax(112px, .7fr) minmax(178px, 1fr) minmax(172px, 1fr);
+      gap: 8px;
+      padding: 10px;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .seat {
-      min-height: 165px;
-      padding: 12px;
+      min-height: 0;
+      padding: 8px;
       border-radius: 8px;
       background: var(--panel);
       border: 1px solid var(--line);
+      overflow: hidden;
     }
 
     .seat.active {
@@ -174,7 +184,7 @@
     .seat.center {
       grid-column: 2;
       grid-row: 2;
-      min-height: 265px;
+      min-height: 0;
       background:
         radial-gradient(circle at center, rgba(255, 255, 255, .08), transparent 62%),
         rgba(7, 48, 39, .82);
@@ -188,7 +198,7 @@
     .seat.player {
       grid-column: 1 / -1;
       grid-row: 3;
-      min-height: 250px;
+      min-height: 0;
     }
 
     .seat-header,
@@ -197,12 +207,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     .name {
       font-weight: 900;
-      font-size: 18px;
+      font-size: 16px;
       overflow-wrap: anywhere;
     }
 
@@ -214,21 +224,21 @@
 
     .meta {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.45;
     }
 
     .tiles {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      min-height: 50px;
+      gap: 4px;
+      min-height: 34px;
       align-content: flex-start;
     }
 
     .tile {
-      width: 42px;
-      height: 56px;
+      width: 36px;
+      height: 48px;
       border: 0;
       border-radius: 7px;
       padding: 4px;
@@ -237,28 +247,9 @@
       background: linear-gradient(90deg, var(--tile), #fffdf2);
       border-bottom: 5px solid var(--tile-side);
       color: #172420;
-      font-size: 24px;
+      font-size: 15px;
       font-weight: 900;
       box-shadow: 0 6px 12px rgba(0, 0, 0, .24);
-    }
-
-    .tile-face {
-      display: grid;
-      place-items: center;
-      gap: 1px;
-      line-height: 1;
-    }
-
-    .tile-number {
-      font-size: 18px;
-    }
-
-    .tile-symbol {
-      font-size: 20px;
-    }
-
-    .tile-label {
-      font-size: 18px;
     }
 
     .tile.selectable {
@@ -279,17 +270,11 @@
     }
 
     .tile.small {
-      width: 30px;
-      height: 40px;
-      font-size: 17px;
+      width: 26px;
+      height: 34px;
+      font-size: 11px;
       border-radius: 6px;
       border-bottom-width: 4px;
-    }
-
-    .tile.small .tile-number,
-    .tile.small .tile-symbol,
-    .tile.small .tile-label {
-      font-size: 14px;
     }
 
     .tile.man {
@@ -315,7 +300,7 @@
     }
 
     .discard-title {
-      margin: 12px 0 7px;
+      margin: 8px 0 5px;
       color: var(--muted);
       font-size: 13px;
     }
@@ -350,8 +335,8 @@
     }
 
     .message {
-      min-height: 74px;
-      padding: 13px;
+      min-height: 54px;
+      padding: 10px;
       border-radius: 8px;
       background: rgba(0, 0, 0, .22);
       border: 1px solid var(--line);
@@ -369,6 +354,22 @@
       margin-top: 14px;
     }
 
+    .center-discard-title {
+      margin: 10px 0 6px;
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .center-discards {
+      min-height: 84px;
+      max-height: 112px;
+      overflow: hidden;
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .18);
+      border: 1px solid var(--line);
+    }
+
     .wall-stat {
       padding: 10px;
       border-radius: 8px;
@@ -384,8 +385,7 @@
     }
 
     .log {
-      margin-top: 16px;
-      padding: 14px;
+      display: none;
     }
 
     .log h2 {
@@ -481,6 +481,8 @@
           <div class="wall-stat">牌牆剩餘<b id="wallCount">0</b></div>
           <div class="wall-stat">本局金額<b id="roundValue">0</b></div>
         </div>
+        <div class="center-discard-title">中間牌池</div>
+        <div class="tiles center-discards" id="centerDiscards"></div>
       </article>
       <article class="seat right" id="seat3"></article>
       <article class="seat player" id="seat0"></article>
@@ -537,6 +539,7 @@
     const messageEl = document.querySelector("#message");
     const wallCountEl = document.querySelector("#wallCount");
     const roundValueEl = document.querySelector("#roundValue");
+    const centerDiscardsEl = document.querySelector("#centerDiscards");
     const logListEl = document.querySelector("#logList");
 
     function buildWall() {
@@ -906,11 +909,7 @@
       const def = tileMap[tile];
       const el = document.createElement(options.button ? "button" : "div");
       el.className = `tile ${def.suit} ${options.small ? "small" : ""} ${options.button ? "selectable" : ""}`;
-      if (def.suit === "honor" || def.suit === "flower") {
-        el.innerHTML = `<span class="tile-label">${def.symbol}</span>`;
-      } else {
-        el.innerHTML = `<span class="tile-face"><span class="tile-number">${def.value}</span><span class="tile-symbol">${def.symbol}</span></span>`;
-      }
+      el.textContent = def.short;
       el.title = def.label;
       if (options.button) {
         el.type = "button";
@@ -948,8 +947,6 @@
         <div class="tiles flower-tiles"></div>
         <div class="meld-title">已吃 / 已碰</div>
         <div class="melds"></div>
-        <div class="discard-title">已打出的牌</div>
-        <div class="tiles discard-tiles"></div>
         <div class="controls"></div>
       `;
 
@@ -962,9 +959,6 @@
           }));
         });
       }
-
-      const discardEl = seat.querySelector(".discard-tiles");
-      player.discards.forEach(tile => discardEl.appendChild(makeTile(tile, { small: true })));
 
       const flowersEl = seat.querySelector(".flower-tiles");
       player.flowers.forEach(tile => flowersEl.appendChild(makeTile(tile, { small: true })));
@@ -1015,6 +1009,7 @@
         });
         wallCountEl.textContent = "0";
         roundValueEl.textContent = "0";
+        centerDiscardsEl.innerHTML = "";
         logListEl.innerHTML = "";
         return;
       }
@@ -1022,12 +1017,20 @@
       state.players.forEach(renderSeat);
       wallCountEl.textContent = state.wall.length;
       roundValueEl.textContent = roundValue();
+      renderCenterDiscards();
       logListEl.innerHTML = state.log.map(item => `<p>${escapeHtml(item)}</p>`).join("");
 
       if (state.phase === "playing") {
         const player = state.players[state.turn];
         messageEl.innerHTML = `輪到 <strong>${escapeHtml(player.name)}</strong>。`;
       }
+    }
+
+    function renderCenterDiscards() {
+      centerDiscardsEl.innerHTML = "";
+      state.players
+        .flatMap(player => player.discards)
+        .forEach(tile => centerDiscardsEl.appendChild(makeTile(tile, { small: true })));
     }
 
     function resetGame() {
